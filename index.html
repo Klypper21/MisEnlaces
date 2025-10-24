@@ -1,0 +1,1882 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>Juego de Tablero Moderno – Selección de Tablero</title>
+  <link rel="icon" type="image/png" href="icon192-192.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="manifest" href="manifest.json">
+  <!-- Para iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Es Tragos">
+<link rel="apple-touch-icon" href="icon-192x192.png">
+  <style>
+  /* Evitar pull-to-refresh en dispositivos móviles */
+html, body {
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  overflow-x: hidden;
+}
+
+#app {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  
+  overflow-x: hidden;
+}
+    :root {
+      --cell-size: 90px;
+      --reto-color: #3498db;
+      --verdad-color: #f1c40f;
+      --trago-color: #e67e22;
+      --yo-nunca-color: #9b59b6;
+      --avanza-color: #2ecc71;
+      --retrocede-color: #e74c3c;
+      --vira-color: #9b59b6;
+      --cambia-color: #1abc9c;
+      --pierde-turno-color: #7f8c8d;
+      --start-color: #95a5a6;
+      --finish-color: #e74c3c;
+      --primary-gradient: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      --secondary-gradient: linear-gradient(135deg, #fd79a8 0%, #fdcb6e 100%);
+      --dice-bg: #2c3e50;
+      --dice-dot: #ecf0f1;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      overscroll-behavior-y: contain;
+      font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: url('imagenes/fondov.png') no-repeat center center fixed;
+      background-size: cover;
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: -1;
+    }
+
+    h1, h2 {
+      text-align: center;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      margin-bottom: 15px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      background: var(--secondary-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 25px;
+    }
+
+    /* ---------- Pantalla de configuración ---------- */
+    #setup {
+      max-width: 800px;
+      width: 100%;
+      margin: 20px auto;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      animation: fadeIn 0.8s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #setup label {
+      display: block;
+      margin: 15px 0 8px;
+      font-weight: bold;
+      color: #fff;
+      font-size: 1.1rem;
+    }
+
+    #setup input[type="number"],
+    #setup input[type="text"],
+    #setup select {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+
+    #setup input:focus,
+    #setup select:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
+    }
+
+    #setup button {
+      display: block;
+      width: 100%;
+      margin-top: 25px;
+      padding: 16px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      background: #00c853;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    #setup button:hover {
+      background: #009624;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    #setup button i {
+      margin-left: 8px;
+    }
+
+    .legend {
+      margin-top: 25px;
+      font-size: 0.95rem;
+      color: #eee;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .legend p {
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin: 10px 0;
+    }
+
+    .legend-color {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      margin-right: 12px;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ---------- Área de juego ---------- */
+    #game {
+      max-width: 1100px;
+      width: 100%;
+      margin: 20px auto;
+      padding: 20px;
+      display: none;
+    }
+
+    #turnInfo {
+      font-size: 1.6rem;
+      margin-bottom: 20px;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 15px;
+      border-radius: 12px;
+      font-weight: bold;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ----- Contenedor de dado y botón ----- */
+    .dice-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 25px;
+    }
+
+    /* ----- Display del dado ----- */
+    .dice-display {
+      width: 100px;
+      height: 100px;
+      margin-bottom: 15px;
+      position: relative;
+      perspective: 1000px;
+    }
+
+    .dice {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 1s;
+      transform: rotateX(0deg) rotateY(0deg);
+    }
+
+    .dice.rolling {
+      animation: rollAnimation 1s ease-out;
+    }
+
+    @keyframes rollAnimation {
+      0% { transform: rotateX(0) rotateY(0); }
+      25% { transform: rotateX(360deg) rotateY(180deg); }
+      50% { transform: rotateX(720deg) rotateY(360deg); }
+      75% { transform: rotateX(1080deg) rotateY(540deg); }
+      100% { transform: rotateX(1440deg) rotateY(720deg); }
+    }
+
+    .dice-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: var(--dice-bg);
+      border-radius: 15px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: var(--dice-dot);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+      backface-visibility: hidden;
+    }
+
+    .dice-dot {
+      width: 18px;
+      height: 18px;
+      background: var(--dice-dot);
+      border-radius: 50%;
+      position: absolute;
+    }
+
+    .face-1 { transform: rotateY(0deg) translateZ(50px); }
+    .face-2 { transform: rotateY(180deg) translateZ(50px); }
+    .face-3 { transform: rotateY(90deg) translateZ(50px); }
+    .face-4 { transform: rotateY(-90deg) translateZ(50px); }
+    .face-5 { transform: rotateX(90deg) translateZ(50px); }
+    .face-6 { transform: rotateX(-90deg) translateZ(50px); }
+
+    /* Posición de puntos para cada cara */
+    .face-1 .dice-dot:nth-child(1) { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+    .face-2 .dice-dot:nth-child(1) { top: 25%; left: 25%; }
+    .face-2 .dice-dot:nth-child(2) { bottom: 25%; right: 25%; }
+
+    .face-3 .dice-dot:nth-child(1) { top: 20%; left: 20%; }
+    .face-3 .dice-dot:nth-child(2) { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+    .face-3 .dice-dot:nth-child(3) { bottom: 20%; right: 20%; }
+
+    .face-4 .dice-dot:nth-child(1) { top: 20%; left: 20%; }
+    .face-4 .dice-dot:nth-child(2) { top: 20%; right: 20%; }
+    .face-4 .dice-dot:nth-child(3) { bottom: 20%; left: 20%; }
+    .face-4 .dice-dot:nth-child(4) { bottom: 20%; right: 20%; }
+
+    .face-5 .dice-dot:nth-child(1) { top: 20%; left: 20%; }
+    .face-5 .dice-dot:nth-child(2) { top: 20%; right: 20%; }
+    .face-5 .dice-dot:nth-child(3) { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+    .face-5 .dice-dot:nth-child(4) { bottom: 20%; left: 20%; }
+    .face-5 .dice-dot:nth-child(5) { bottom: 20%; right: 20%; }
+
+    .face-6 .dice-dot:nth-child(1) { top: 20%; left: 20%; }
+    .face-6 .dice-dot:nth-child(2) { top: 20%; right: 20%; }
+    .face-6 .dice-dot:nth-child(3) { top: 50%; left: 20%; transform: translateY(-50%); }
+    .face-6 .dice-dot:nth-child(4) { top: 50%; right: 20%; transform: translateY(-50%); }
+    .face-6 .dice-dot:nth-child(5) { bottom: 20%; left: 20%; }
+    .face-6 .dice-dot:nth-child(6) { bottom: 20%; right: 20%; }
+
+    /* ----- Botón de lanzar dado ----- */
+    #rollBtn {
+      display: block;
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: var(--secondary-gradient);
+      border: none;
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    #rollBtn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0));
+      z-index: -1;
+    }
+
+    #rollBtn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 15px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    #rollBtn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ----- Información de los jugadores ----- */
+    #playersInfo {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 25px;
+    }
+
+    .player-tag {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 25px;
+      padding: 8px 16px;
+      font-size: 1rem;
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s;
+    }
+
+    .player-tag.active {
+      background: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+      transform: scale(1.05);
+    }
+
+    .player-tag .dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      margin-right: 8px;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    }
+
+    /* ----- Tablero ----- */
+    #boardContainer {
+      width: 100%;
+      max-height: 650px;
+      overflow: auto;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      background: rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(8px);
+      border-radius: 16px;
+      padding: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(10, var(--cell-size));
+      grid-auto-rows: var(--cell-size);
+      gap: 8px;
+      padding: 8px;
+      margin: 0 auto;
+      width: fit-content;
+    }
+
+    .cell {
+      position: relative;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #fff;
+      cursor: default;
+      box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.2), 0 5px 10px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s, box-shadow 0.3s;
+      overflow: hidden;
+    }
+
+    .cell:hover {
+      transform: translateY(-5px);
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2), 0 8px 15px rgba(0, 0, 0, 0.25);
+    }
+
+    .cell::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 35%;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .cell-number {
+      position: absolute;
+      top: 5px;
+      left: 8px;
+      font-size: 0.85rem;
+      color: #fff;
+      text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+      font-weight: bold;
+    }
+
+    .cell-type {
+      font-size: 0.95rem;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+      z-index: 2;
+      font-weight: 600;
+    }
+
+    .cell-icon {
+      font-size: 1.6rem;
+      margin-bottom: 5px;
+      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.6);
+      z-index: 2;
+    }
+
+    .cell.reto {
+      background: linear-gradient(to bottom, var(--reto-color), #2980b9);
+    }
+    .cell.verdad {
+      background: linear-gradient(to bottom, var(--verdad-color), #d35400);
+    }
+    .cell.trago {
+      background: linear-gradient(to bottom, var(--trago-color), #c0392b);
+    }
+    .cell.yo-nunca {
+      background: linear-gradient(to bottom, var(--yo-nunca-color), #8e44ad);
+    }
+    .cell.avanza {
+      background: linear-gradient(to bottom, var(--avanza-color), #27ae60);
+    }
+    .cell.retrocede {
+      background: linear-gradient(to bottom, var(--retrocede-color), #c0392b);
+    }
+    .cell.vira {
+      background: linear-gradient(to bottom, var(--vira-color), #8e44ad);
+    }
+    .cell.cambia {
+      background: linear-gradient(to bottom, var(--cambia-color), #16a085);
+    }
+    .cell.pierde-turno {
+      background: linear-gradient(to bottom, var(--pierde-turno-color), #7f8c8d);
+    }
+    .cell.start {
+      background: linear-gradient(to bottom, var(--start-color), #7f8c8d);
+    }
+    .cell.finish {
+      background: linear-gradient(to bottom, var(--finish-color), #c0392b);
+    }
+
+    .markers {
+      position: absolute;
+      bottom: 5px;
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      gap: 3px;
+      padding: 0 5px;
+    }
+
+    .marker {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+      transition: all 0.5s ease-in-out;
+    }
+
+    /* Animación para el movimiento de fichas */
+    .marker.moving {
+      animation: markerMove 0.5s ease-in-out;
+    }
+
+    @keyframes markerMove {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+
+    /* ----- Registro de turnos ----- */
+    #log {
+      height: 160px;
+      overflow: auto;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 25px;
+      font-size: 1rem;
+      line-height: 1.5;
+      backdrop-filter: blur(5px);
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    #log p {
+      margin: 10px 0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      animation: logEntry 0.5s ease-out;
+    }
+
+    @keyframes logEntry {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+      /* ----- Modal Modernizado (Estilo de Carta de Juego) ----- */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85); /* Fondo más oscuro */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(8px); /* Blur más pronunciado */
+      animation: modalFadeIn 0.3s ease-out;
+    }
+    
+    @keyframes modalFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .modal.hidden { display: none; }
+
+    .modal-content {
+      width: 90%;
+      max-width: 450px; /* Ancho más típico de carta */
+      height: 65vh; /* Altura basada en viewport */
+      max-height: 650px; /* Altura máxima de carta */
+      perspective: 1000px;
+      /* Animación de entrada de la carta */
+      animation: cardPopIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    }
+    
+    @keyframes cardPopIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    
+    /* Nuevos estilos para el modal de tarjeta giratoria */
+    .modal-card-container {
+      width: 100%;
+      height: 100%;
+      perspective: 1000px;
+    }
+    
+    .modal-card {
+      width: 100%;
+      height: 100%; /* Ajuste a 100% de modal-content */
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .modal-card.flipped {
+      transform: rotateY(180deg);
+    }
+    
+    .modal-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      border-radius: 25px; /* Bordes más redondeados */
+      overflow: hidden;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8); /* Sombra más dramática */
+      border: 5px solid #fff; /* Marco grueso de color blanco */
+      background: #333; /* Color base para evitar transparencias extrañas */
+      
+      /* Estilo de Marco de Juego: Degradado Interno o Borde Doble */
+      box-shadow: 0 0 0 8px #f1c40f, 0 15px 40px rgba(0, 0, 0, 0.8); /* Marco dorado/amarillo */
+    }
+    
+    .modal-front {
+      background: url('imagenes/modal.png') no-repeat center center;
+      background-size: cover;
+      color: #fff;
+      z-index: 2;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 30px;
+      cursor: pointer; /* Indica que es clickeable */
+    }
+    
+    .modal-back {
+      background: url('imagenes/modal.png') no-repeat center center;
+      color: #fff;
+      transform: rotateY(180deg);
+      z-index: 1;
+      justify-content: space-between; /* Para organizar header, body, footer */
+    }
+    
+    .modal-front::before,
+    .modal-back::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      /* Se quita el gradiente para usar el color de fondo sólido o la imagen */
+      /* Si quieres un overlay: background: rgba(0, 0, 0, 0.5); */
+      z-index: -1;
+    }
+
+    /* Overlay semi-transparente para la cara trasera para visibilidad de texto */
+    .modal-back::before {
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.8) 100%);
+        opacity: 0.3;
+    }
+    
+    .modal-card-content {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      flex: 1;
+      padding: 20px;
+    }
+    
+    .modal-card-icon {
+      font-size: 5rem; /* Icono más grande */
+      margin-bottom: 20px;
+      text-shadow: 3px 3px 10px rgba(0, 0, 0, 1);
+      color: var(--yo-nunca-color); /* Color de acento para el icono */
+    }
+    
+    .modal-card-title {
+      font-size: 2.8rem; /* Título frontal más grande */
+      font-weight: 900;
+      text-shadow: 2px 2px 8px rgba(0, 0, 0, 1);
+      margin: 0;
+      letter-spacing: 1px;
+      color: #ffeaa7; /* Color de título de carta */
+    }
+    
+    .modal-card-instruction {
+      margin-top: 30px;
+      font-size: 1.1rem;
+      opacity: 0.8;
+      font-style: italic;
+    }
+    
+    .modal-header {
+      padding: 25px 30px 15px;
+      position: relative;
+      text-align: center;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.1); /* Separador */
+      background: rgba(0, 0, 0, 0.2);
+    }
+    
+    .modal-header h3 {
+      margin: 0;
+      font-size: 2.3rem; /* Título trasero más grande */
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: #ffda79; /* Color de título de acción */
+    }
+    
+    .modal-body {
+      padding: 30px;
+      font-size: 1.4rem;
+      line-height: 1.7;
+      flex-grow: 1; /* Para que ocupe el espacio central */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      font-family: 'Poppins', sans-serif;
+    }
+    
+    .modal-footer {
+      padding: 20px 30px 30px;
+      text-align: center;
+      border-top: 2px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.2);
+    }
+    
+    .modal-image {
+      /* Quitado o minimizado el espacio de la imagen si no es esencial */
+      display: none; 
+    }
+    
+    /* El botón se mantiene para la acción, pero puedes darle un estilo más de "juego" */
+    #modalClose {
+      padding: 14px 40px;
+      background: linear-gradient(to right, #00c853, #00e676);
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-size: 1.3rem;
+      font-weight: 800;
+      transition: all 0.3s;
+      box-shadow: 0 8px 25px rgba(0, 200, 83, 0.6); /* Sombra más fuerte */
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
+      z-index: 10;
+    }
+    
+    #modalClose:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 30px rgba(0, 200, 83, 0.7);
+    }
+
+    /* Estilos responsivos para el modal (Ajustar tamaños de texto/carta) */
+    @media (max-width: 768px) {
+      .modal-content {
+        max-width: 95%;
+        height: 60vh;
+      }
+      
+      .modal-header h3 {
+        font-size: 2rem;
+      }
+      
+      .modal-body {
+        font-size: 1.2rem;
+        padding: 25px;
+      }
+      
+      .modal-card-title {
+        font-size: 2.5rem;
+      }
+      
+      .modal-card-icon {
+        font-size: 4rem;
+      }
+      
+      #modalClose {
+        padding: 12px 30px;
+        font-size: 1.1rem;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .modal-content {
+        max-width: 95%;
+        height: 70vh;
+      }
+      
+      .modal-face {
+        border-radius: 20px;
+        border: 4px solid #fff;
+        box-shadow: 0 0 0 6px #f1c40f, 0 10px 30px rgba(0, 0, 0, 0.8);
+      }
+      
+      .modal-header {
+        padding: 20px 25px 15px;
+      }
+      
+      .modal-header h3 {
+        font-size: 1.8rem;
+      }
+      
+      .modal-body {
+        font-size: 1.1rem;
+        padding: 20px;
+      }
+      
+      .modal-card-title {
+        font-size: 2.2rem;
+      }
+      
+      .modal-card-icon {
+        font-size: 3.5rem;
+      }
+      
+      .modal-footer {
+        padding: 15px 25px 25px;
+      }
+      
+      #modalClose {
+        padding: 10px 25px;
+        font-size: 1rem;
+      }
+    }
+
+
+    /* Responsive */
+    @media (max-width: 1100px) {
+      :root {
+        --cell-size: 80px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      :root {
+        --cell-size: 70px;
+      }
+      
+      h1 {
+        font-size: 2.2rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      :root {
+        --cell-size: 60px;
+      }
+      
+      #board {
+        grid-template-columns: repeat(10, var(--cell-size));
+      }
+      
+      .cell-type {
+        font-size: 0.8rem;
+      }
+      
+      .cell-icon {
+        font-size: 1.3rem;
+      }
+      
+      #rollBtn {
+        width: 110px;
+        height: 110px;
+        font-size: 1.1rem;
+      }
+      
+      .dice-display {
+        width: 80px;
+        height: 80px;
+      }
+      
+      
+      .player-tag {
+        font-size: 0.9rem;
+        padding: 6px 12px;
+      }
+
+      .marker {
+        width: 14px;
+        height: 14px;
+      }
+    }
+    
+    @media (max-width: 600px) {
+      body {
+        padding: 15px;
+      }
+      
+      #setup {
+        padding: 20px;
+      }
+      
+      h1 {
+        font-size: 1.8rem;
+      }
+      
+      #rollBtn {
+        width: 100px;
+        height: 100px;
+        font-size: 1rem;
+      }
+      
+      .dice-display {
+        width: 70px;
+        height: 70px;
+      }
+      
+      .player-tag {
+        font-size: 0.85rem;
+        padding: 5px 10px;
+      }
+
+      .marker {
+        width: 12px;
+        height: 12px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .player-tag {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+      }
+
+      .marker {
+        width: 10px;
+        height: 10px;
+      }
+
+      .markers {
+        gap: 2px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+   <!-- Pantalla de Configuración -->
+  <div id="setup">
+    <h1>Juego de Tablero Moderno</h1>
+    
+    <label for="boardSize">Tamaño del tablero:</label>
+    <select id="boardSize">
+      <option value="60">60 casillas</option>
+      <option value="100">100 casillas</option>
+      <option value="120">120 casillas</option>
+    </select>
+    
+    <label for="numPlayers">Número de jugadores (2‑16):</label>
+    <input type="number" id="numPlayers" min="2" max="16" value="2">
+
+    <div id="playerNames"></div>
+
+    <button id="startBtn">Comenzar Juego <i class="fas fa-play"></i></button>
+    
+    <div class="legend">
+      <p><strong>Leyenda de casillas:</strong></p>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--reto-color);"></div>
+        <span>Reto - Debes completar un desafío</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--verdad-color);"></div>
+        <span>Verdad - Debes responder una pregunta sinceramente</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--trago-color);"></div>
+        <span>Trago - Debes tomar un trago</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--yo-nunca-color);"></div>
+        <span>Yo Nunca - Responde honestamente si alguna vez hiciste algo</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--avanza-color);"></div>
+        <span>Avanza - Avanzas X casillas</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--retrocede-color);"></div>
+        <span>Retrocede - Retrocedes X casillas</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--vira-color);"></div>
+        <span>Vira - Te mueves a una casilla específica</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--cambia-color);"></div>
+        <span>Cambia - Cambias de posición con otro jugador</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--pierde-turno-color);"></div>
+        <span>Pierde Turno - Pierdes tu próximo turno</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Área de Juego -->
+  <div id="game">
+    <h2 id="turnInfo">Turno: </h2>
+    
+    <div class="dice-container">
+      <div class="dice-display">
+        <div class="dice" id="dice">
+          <div class="dice-face face-1"><div class="dice-dot"></div></div>
+          <div class="dice-face face-2"><div class="dice-dot"></div><div class="dice-dot"></div></div>
+          <div class="dice-face face-3"><div class="dice-dot"></div><div class="dice-dot"></div><div class="dice-dot"></div></div>
+          <div class="dice-face face-4"><div class="dice-dot"></div><div class="dice-dot"></div><div class="dice-dot"></div><div class="dice-dot"></div></div>
+          <div class="dice-face face-5"><div class="dice-dot"></div><div class="dice-dot"></div><div class="dice-dot"></div><div class="dice-dot"></div><div class="dice-dot"></div></div>
+          <div class="dice-face face-6"><div class="dice-dot"></div><div class="dice-dot"></div><div class="dice-dot"></div><div class="dice-dot"></div><div class="dice-dot"></div><div class="dice-dot"></div></div>
+        </div>
+      </div>
+      <button id="rollBtn">Lanzar Dado <i class="fas fa-dice"></i></button>
+    </div>
+
+    <div id="playersInfo"></div>
+
+    <div id="boardContainer">
+      <div id="board"></div>
+    </div>
+
+    <div id="log"></div>
+  </div>
+
+  <!-- Modal con efecto de tarjeta giratoria -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-card-container">
+        <div class="modal-card" id="modalCard">
+          <!-- Cara frontal - Muestra el tipo de casilla -->
+          <div class="modal-face modal-front">
+            <div class="modal-card-content">
+              <div class="modal-card-icon" id="modalFrontIcon"></div>
+              <h3 class="modal-card-title" id="modalFrontTitle">Tipo de Casilla</h3>
+              <p class="modal-card-instruction">Toca para revelar</p>
+            </div>
+          </div>
+          
+          <!-- Cara trasera - Muestra el contenido específico -->
+          <div class="modal-face modal-back">
+            <div class="modal-header">
+              <h3 id="modalBackTitle">Acción de Casilla</h3>
+            </div>
+            <div class="modal-body">
+              <p id="modalText"></p>
+            </div>
+            <div class="modal-image">
+              <img src="imagenes/icon.png" alt="Icono de acción">
+            </div>
+            <div class="modal-footer">
+              <button id="modalClose">OK</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --------------------------------------------------------------
+    //  Datos de los retos / verdades / tragos / yo nunca
+    // --------------------------------------------------------------
+    // Contenido normal (antes de la casilla 30)
+    const retosNormales = [
+      "Imita a un animal durante 30 segundos.",
+      "Haz un chiste, el primero en reir bebe. Si nadie rie bebes tú.",
+      "MEDUSA!!: Todos bajan la cabeza y cada jugador mirará a alguien los que coincidan beben.",
+      "No puedes parar de reir hasta el próximo turno tuyo.",
+      "Encargate de las bebidas hasta el proximo turno.",
+      "Dale un mordisquito sexy en la oreja de alguien.",
+       "Besa el abdomen de alguien por 5 segundos.",
+       "La persona de tu derecha deberá hacerte una pregunta al oido y deberás respoderla en voz alta. Si alguien quiere saber la pregunta deberá tomar 2 shots.",
+       "Durante 2 rondas tu y el jugador de frente haran los retos de ambos.",
+       "Cuenta de 3 en 3 hasta 33. Si te equivocas bebes 1 shot",
+       "Imita a la persona mas seria del grupo",
+       "Intercambia prenda con un jugador del sexo opuesto"
+       
+    ];
+
+    const verdadesNormales = [
+      "A quien eligirias del otro género para Casarte, otro para acostarte y otro para matar (del grupo)",
+      "¿Quien de los presentes crees que es más propenso a ser Gey, que beba por maricón?",
+      "​¿Cuál es la cosa más vergonzosa que has hecho estando borracho/a?",
+      "¿Que tiempo llevas sin tener relaciones sexuales?",
+      "​¿Cuál es la prenda de vestir que más te excita de una persona?",
+      "¿prefieres hacerlo en la oscuridad o con algo de luz",
+      "​Si tuvieras que hacer un OnlyFans, ¿cuál sería tu nicho o estilo de contenido?",
+      "¿Si tu pareja te propone un trio que dirias?",
+      "¿Quien del grupo crees que seria el primero en ser infiel?"
+    ];
+
+    const yoNuncaNormales = [
+      "Yo nunca he pillado a alguien teniendo relaciones sexuales.",
+      "Yo nunca me he grabado teniendo sexo.",
+      "Yo nunca he cancelado algún plan para tener sexo.",
+      
+      "Yo nunca me he arrepentido de acostarme con alguien al día siguiente.",
+      "Yo nunca he estado 2 o más dias sin ducharme.",
+      "Yo nunca he besado a alguien del mismo sexo",
+      "Yo nunca me he masturbado",
+      "Yo nunca he afeitado las partes intimas de otra persona",
+      "Yo nunca he tenido alguna relacion con un familiar",
+      "Yo nunca he pillado a alguien masturbandose",
+      "Yo nunca he pensado en ser padre/madre"
+      
+    ];
+
+    // Contenido más "caliente" (después de la casilla 30)
+    const retosCalientes = [
+      "Besa el cuello de la persona a tu izquierda durante 10 segundos.",
+      "Quítate una prenda de ropa.",
+      "Imita una escena caliente de una película porno.",
+      "Haz un striptease de 30 segundos.",
+      "El grupo elige a quien debes lamer el dedo como si fuera algo más.",
+      "Intercambia prenda con la persona de tu derecha.",
+      "Elige a alguien del grupo y decidirá que prenda quitarte.",
+      "Simula un orgasmo durante 5 segundos.",
+      "Haz un beso triple.",
+      "Besa el abdomen de alguien por 5 segundos.",
+       "Da un beso en la baca a todos de forma seguida.",
+        "Haz un striptease completo hasta quedar en ropa interior.",
+        "Cual ha sido el numero de personas que más has besado en una noche. Toma ese numero de tragos.",
+        "Sube una historia diciendo que vas abrir un Only Fans.",
+        "Elige a un jugador de equipo, cada vez que uno tome toman los 2 por todo el juego",
+        "Elige la medida de un shot, se cumplira al proximo/a en tomar",
+        "Esta Carta te protege de una carta futura piensa como usarla"
+        
+    ];
+
+    const verdadesCalientes = [
+      "¿Cuál fue el lugar mas atrevido donde lo has hecho?",
+      "¿Quién del grupo crees que es mejor en la cama?",
+      "¿Quéprefieres hacerlo en silencio o con ruido?",
+      "¿Haz usado juguetes sexuales?",
+      "¿Alguna vez has tenido relaciones en un lugar público?",
+      "¿Cuál es la parte del cuerpo que más disfrutas lamer o besar?",
+      "¿Harías un trío con 2 de los presentes?",
+      "¿Prefieres sexo rápido y salvajo o lento y sensual?",
+      "¿Qué es lo más excitante que has hecho sexualmente?",
+      "¿Has tenido alguna experiencia con alguien del mismo sexo?",
+      "¿Qué parte del cuerpo de la persona a tu derecha te resulta más atractiva?",
+      "Que dirías si tu pareja te propone un trío.",
+      "¿Donde tuvistes relaciones sexuuales por primera vez?",
+      "A que edad tuvistes tu primera relción sexual",
+      "Si tuvieras que elegir para hacer un trio preferirias a alguien de tu mismo sexo o del sexo opuesto"
+    ];
+
+    const yoNuncaCalientes = [
+      "Yo nunca he participado en un trío",
+      "Yo nunca he contestado una llamada miestras tenia relaciones sexuales.",
+      "Yo nunca he tenido sexo con alguien que acabo de conocer.",
+      "Yo nunca he usado juguetes sexuales.",
+      "Yo nunca he tenido un trío.",
+      "Yo nunca he grabado un video íntimo.",
+      "Yo nunca he sido pillado masturbandome.",
+      "Yo nunca he visto porno en pareja.",
+      "Yo nunca he sido pillado teniendo relaciones sexuales.",
+      "Yo nunca he tenido sexo en un lugar público.",
+      "Yo nunca me he acostado con la misma persona que un amigo",
+      "Yo nunca he atado a mi pareja durante el sexo.",
+      "Yo nunca he follado con mi mascota delante.",
+      "Yo nunca he recibido un beso negro.",
+      "Yo nunca he rechazado un trío.",
+      "Yo nunca he hecho una mamada.",
+      "Yo nunca he follado en la playa.",
+      "Yo nunca he follado con la regla",
+      "Yo nunca he follado en el bosque",
+      "Yo nunca he mandado a callar a alguien durante el sexo",
+      "Yo nunca he follado en una piscina.",
+      "Yo nunca he probado semen"
+    ];
+
+    // Los tragos se mantienen igual para ambos casos
+    const tragos = [
+      "El más alto toma un shot.",
+      "La persona con los pechos más grandes toma un shot.",
+      "El que tenga más tatuajes toma un shot.",
+      "El más bajito/a toma un shot.",
+      "La persona con mejor trasero (según el grupo) toma un shot.",
+      "El que tenga el pelo más largo toma un shot.",
+      "El/la más musculoso/a toma un shot.",
+      "Quien lleve menos ropa toma un shot.",
+      "Quien lleve ropa interior roja hoy toma un shot.",
+      "El jugador mas joven toma un shot.",
+      "Todos brindan y toman un shot.",
+      "Todas las chicas toman un shot.",
+      "Todos los chicos toman un shot.",
+      "Quien lleve ropa interior de color negro hoy toma un shot.",
+      "El que menos carga tenga en el celular toma un shot",
+      "El primero en hablar toma un shot",
+      "Toma el shot mas duro de la noche"
+    ];
+
+    // Iconos para los tipos de casilla (parte frontal)
+    const cellTypeIcons = {
+      'reto': 'fa-tasks',
+      'verdad': 'fa-question-circle',
+      'trago': 'fa-glass-cheers',
+      'yo-nunca': 'fa-hand-point-right',
+      'avanza': 'fa-arrow-up',
+      'retrocede': 'fa-arrow-down',
+      'vira': 'fa-exchange-alt',
+      'cambia': 'fa-random',
+      'pierde-turno': 'fa-hourglass-half',
+      'start': 'fa-flag',
+      'finish': 'fa-trophy'
+    };
+    
+    // Títulos para los tipos de casilla
+    const cellTypeTitles = {
+      'reto': '¡Reto!',
+      'verdad': '¡Verdad!',
+      'trago': '¡Trago!',
+      'yo-nunca': '¡Yo Nunca!',
+      'avanza': '¡Avanza!',
+      'retrocede': '¡Retrocede!',
+      'vira': '¡Vira!',
+      'cambia': '¡Cambia!',
+      'pierde-turno': '¡Pierde Turno!',
+      'start': 'Inicio',
+      'finish': 'Meta'
+    };
+
+    // Función para obtener contenido según la posición
+    function getContentBasedOnPosition(position, normalArray, hotArray) {
+      return position >= 30 ? getRandom(hotArray) : getRandom(normalArray);
+    }
+
+      // Paleta de colores extendida para 16 jugadores
+    const playerColors = [
+      '#e74c3c', '#8e44ad', '#27ae60', '#2980b9',
+      '#f1c40f', '#e67e22', '#9b59b6', '#1abc9c',
+      '#d35400', '#c0392b', '#16a085', '#2c3e50',
+      '#f39c12', '#7f8c8d', '#34495e', '#95a5a6'
+    ];
+
+    let players = [];
+    let currentPlayerIndex = 0;
+    let totalSquares = 60;
+    let skipNextTurn = false;
+    let playerToSkip = null;
+
+    function getRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function addLog(msg) {
+      const log = document.getElementById('log');
+      const p = document.createElement('p');
+      p.textContent = msg;
+      log.appendChild(p);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function createBoard() {
+      const board = document.getElementById('board');
+      board.innerHTML = '';
+
+      const boardSizeSelect = document.getElementById('boardSize');
+      totalSquares = parseInt(boardSizeSelect.value, 10);
+
+      let columns = 10;
+      if (totalSquares === 100) columns = 10;
+      if (totalSquares === 120) columns = 12;
+      
+      board.style.gridTemplateColumns = `repeat(${columns}, var(--cell-size))`;
+
+      // Definir tipos de casillas con diferentes pesos según la posición
+      const cellTypesBefore30 = [
+        { type: 'trago', weight: 50, text: 'Trago', icon: 'glass-cheers' }, // Mayor peso para trago
+        { type: 'reto', weight: 12, text: 'Reto', icon: 'tasks' },
+        { type: 'verdad', weight: 12, text: 'Verdad', icon: 'question-circle' },
+        { type: 'yo-nunca', weight: 12, text: 'Yo Nunca', icon: 'hand-point-right' },
+        { type: 'avanza', weight: 4, text: 'Avanza', icon: 'arrow-up' },
+        { type: 'retrocede', weight: 3, text: 'Retrocede', icon: 'arrow-down' },
+        { type: 'vira', weight: 3, text: 'Vira', icon: 'exchange-alt' },
+        { type: 'cambia', weight: 2, text: 'Cambia', icon: 'random' },
+        { type: 'pierde-turno', weight: 2, text: 'Pierde Turno', icon: 'hourglass-half' }
+      ];
+
+      const cellTypesAfter30 = [
+        { type: 'reto', weight: 22, text: 'Reto', icon: 'tasks' },
+        { type: 'verdad', weight: 22, text: 'Verdad', icon: 'question-circle' },
+        { type: 'trago', weight: 22, text: 'Trago', icon: 'glass-cheers' },
+        { type: 'yo-nunca', weight: 22, text: 'Yo Nunca', icon: 'hand-point-right' },
+        { type: 'avanza', weight: 3, text: 'Avanza', icon: 'arrow-up' },
+        { type: 'retrocede', weight: 2, text: 'Retrocede', icon: 'arrow-down' },
+        { type: 'vira', weight: 2, text: 'Vira', icon: 'exchange-alt' },
+        { type: 'cambia', weight: 3, text: 'Cambia', icon: 'random' },
+        { type: 'pierde-turno', weight: 2, text: 'Pierde Turno', icon: 'hourglass-half' }
+      ];
+
+      for (let i = 0; i < totalSquares; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.index = i;
+
+        let type, typeText, icon;
+        
+        if (i === 0) {
+          type = 'start';
+          typeText = 'Inicio';
+          icon = 'flag';
+          cell.classList.add('start');
+        } else if (i === totalSquares - 1) {
+          type = 'finish';
+          typeText = 'Meta';
+          icon = 'trophy';
+          cell.classList.add('finish');
+        } else {
+          // Determinar qué conjunto de tipos usar según la posición
+          const cellTypes = i < 30 ? cellTypesBefore30 : cellTypesAfter30;
+          const totalWeight = cellTypes.reduce((sum, type) => sum + type.weight, 0);
+          
+          let randomValue = Math.floor(Math.random() * totalWeight);
+          let accumulatedWeight = 0;
+          
+          for (const cellType of cellTypes) {
+            accumulatedWeight += cellType.weight;
+            if (randomValue < accumulatedWeight) {
+              type = cellType.type;
+              typeText = cellType.text;
+              icon = cellType.icon;
+              cell.classList.add(type);
+              break;
+            }
+          }
+        }
+        cell.dataset.type = type;
+
+        const num = document.createElement('span');
+        num.classList.add('cell-number');
+        num.textContent = i + 1;
+        cell.appendChild(num);
+
+        const iconElem = document.createElement('i');
+        iconElem.classList.add('cell-icon', 'fas', `fa-${icon}`);
+        cell.appendChild(iconElem);
+
+        const typeElem = document.createElement('div');
+        typeElem.classList.add('cell-type');
+        typeElem.textContent = typeText;
+        cell.appendChild(typeElem);
+
+        const markers = document.createElement('div');
+        markers.classList.add('markers');
+        cell.appendChild(markers);
+
+        board.appendChild(cell);
+      }
+    }
+
+    function placePlayerMarkers() {
+      players.forEach(p => {
+        const startMarkers = document.querySelector('.cell[data-index="0"] .markers');
+        const marker = document.createElement('div');
+        marker.classList.add('marker');
+        marker.style.backgroundColor = p.color;
+        marker.dataset.playerId = p.id;
+        startMarkers.appendChild(marker);
+        p.marker = marker;
+        p.position = 0;
+      });
+    }
+
+    function updatePlayersInfo() {
+      const container = document.getElementById('playersInfo');
+      container.innerHTML = '';
+      players.forEach((p, index) => {
+        const tag = document.createElement('div');
+        tag.classList.add('player-tag');
+        if (index === currentPlayerIndex) {
+          tag.classList.add('active');
+        }
+        const dot = document.createElement('div');
+        dot.classList.add('dot');
+        dot.style.backgroundColor = p.color;
+        tag.appendChild(dot);
+        const txt = document.createElement('span');
+        txt.textContent = `${p.name} (casilla ${p.position + 1})`;
+        tag.appendChild(txt);
+        container.appendChild(tag);
+      });
+    }
+
+    function updateTurnInfo() {
+      const turnInfo = document.getElementById('turnInfo');
+      const cur = players[currentPlayerIndex];
+      turnInfo.textContent = `Turno de ${cur.name}`;
+      updatePlayersInfo();
+    }
+
+    // Función showModal actualizada para usar la tarjeta giratoria
+    function showModal(title, msg, callback, cellType = null) {
+      const modal = document.getElementById('modal');
+      const modalCard = document.getElementById('modalCard');
+      const modalFrontIcon = document.getElementById('modalFrontIcon');
+      const modalFrontTitle = document.getElementById('modalFrontTitle');
+      const modalBackTitle = document.getElementById('modalBackTitle');
+      const modalText = document.getElementById('modalText');
+      
+      // Configurar la cara frontal si tenemos un tipo de casilla
+      if (cellType) {
+        modalFrontIcon.className = `modal-card-icon fas ${cellTypeIcons[cellType] || 'fa-question-circle'}`;
+        modalFrontTitle.textContent = cellTypeTitles[cellType] || 'Casilla Especial';
+      }
+      
+      // Configurar la cara trasera
+      modalBackTitle.textContent = title;
+      modalText.textContent = msg;
+      
+      // Reiniciar el estado de la tarjeta (sin girar)
+      modalCard.classList.remove('flipped');
+      
+      // Mostrar el modal
+      modal.classList.remove('hidden');
+      
+      // Configurar el evento de clic para girar la tarjeta
+      const handleCardClick = () => {
+        modalCard.classList.add('flipped');
+        modalCard.removeEventListener('click', handleCardClick);
+      };
+      
+      modalCard.addEventListener('click', handleCardClick);
+      
+      // Configurar el botón de cierre
+      const closeBtn = document.getElementById('modalClose');
+      const newBtn = closeBtn.cloneNode(true);
+      closeBtn.parentNode.replaceChild(newBtn, closeBtn);
+      
+      newBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        if (typeof callback === 'function') callback();
+      });
+    }
+
+    function showDiceResult(result, callback) {
+      const dice = document.getElementById('dice');
+      
+      for (let i = 1; i <= 6; i++) {
+        dice.querySelector(`.face-${i}`).style.display = 'none';
+      }
+      
+      dice.classList.add('rolling');
+      
+      setTimeout(() => {
+        dice.classList.remove('rolling');
+        dice.querySelector(`.face-${result}`).style.display = 'flex';
+        
+        const rotations = {
+          1: 'rotateX(0deg) rotateY(0deg)',      // frente
+          2: 'rotateX(0deg) rotateY(180deg)',    // atrás
+          3: 'rotateX(0deg) rotateY(-90deg)',    // derecha
+          4: 'rotateX(0deg) rotateY(90deg)',     // izquierda
+          5: 'rotateX(-90deg) rotateY(0deg)',    // arriba
+          6: 'rotateX(90deg) rotateY(0deg)'      // abajo
+        };
+        
+        dice.style.transform = rotations[result];
+        
+        if (callback) callback(result);
+      }, 1000);
+    }
+
+    function createConfirmButton(result) {
+      document.getElementById('rollBtn').style.display = 'none';
+      
+      const confirmBtn = document.createElement('button');
+      confirmBtn.id = 'confirmBtn';
+      confirmBtn.innerHTML = `Avanzar ${result} casillas <i class="fas fa-arrow-right"></i>`;
+      confirmBtn.style.cssText = `
+        display: block;
+        width: 200px;
+        margin: 15px auto;
+        padding: 12px 20px;
+        background: var(--secondary-gradient);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s;
+      `;
+      
+      confirmBtn.addEventListener('mouseenter', () => {
+        confirmBtn.style.transform = 'translateY(-3px)';
+        confirmBtn.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.4)';
+      });
+      
+      confirmBtn.addEventListener('mouseleave', () => {
+        confirmBtn.style.transform = 'translateY(0)';
+        confirmBtn.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.3)';
+      });
+      
+      const diceContainer = document.querySelector('.dice-container');
+      diceContainer.appendChild(confirmBtn);
+      
+      return confirmBtn;
+    }
+
+    function removeConfirmButton() {
+      const confirmBtn = document.getElementById('confirmBtn');
+      if (confirmBtn) {
+        confirmBtn.remove();
+      }
+      document.getElementById('rollBtn').style.display = 'block';
+    }
+
+    function rollDice() {
+      disableRollBtn();
+
+      const btn = document.getElementById('rollBtn');
+      btn.classList.add('rolling');
+
+      setTimeout(() => {
+        const result = Math.floor(Math.random() * 6) + 1;
+        btn.classList.remove('rolling');
+        
+        btn.innerHTML = `Resultado: ${result} <i class="fas fa-dice"></i>`;
+        
+        const player = players[currentPlayerIndex];
+        
+        showDiceResult(result, (diceResult) => {
+          const confirmBtn = createConfirmButton(diceResult);
+          
+          confirmBtn.addEventListener('click', () => {
+            removeConfirmButton();
+            btn.innerHTML = 'Lanzar Dado <i class="fas fa-dice"></i>';
+            movePlayer(player, diceResult);
+          });
+        });
+      }, 1000);
+    }
+
+    function animateMarkerMovement(player, oldPos, newPos, callback) {
+      const steps = Math.abs(newPos - oldPos);
+      const direction = newPos > oldPos ? 1 : -1;
+      let currentStep = 0;
+      
+      function moveStep() {
+        if (currentStep < steps) {
+          currentStep++;
+          const intermediatePos = oldPos + (currentStep * direction);
+          
+          player.marker.parentElement.removeChild(player.marker);
+          
+          const newCellMarkers = document.querySelector(`.cell[data-index="${intermediatePos}"] .markers`);
+          newCellMarkers.appendChild(player.marker);
+          
+          player.marker.classList.add('moving');
+          setTimeout(() => {
+            player.marker.classList.remove('moving');
+          }, 300);
+          
+          player.position = intermediatePos;
+          updatePlayersInfo();
+          
+          const newCell = document.querySelector(`.cell[data-index="${intermediatePos}"]`);
+          if (newCell) {
+            newCell.scrollIntoView({behavior: 'smooth', block: 'center', inline: 'center'});
+          }
+          
+          setTimeout(moveStep, 500);
+        } else {
+          if (callback) callback();
+        }
+      }
+      
+      moveStep();
+    }
+
+
+function movePlayer(player, steps) {
+  const oldPos = player.position;
+  let newPos = oldPos + steps;
+  const lastIdx = totalSquares - 1;
+
+  // Si el movimiento es hacia adelante y se pasa de la meta
+  if (newPos > lastIdx) {
+    const excess = newPos - lastIdx;
+    newPos = lastIdx - excess;
+    if (newPos < 0) newPos = 0;
+    addLog(`${player.name} lanzó ${steps} y se pasó de la meta → rebota a casilla ${newPos + 1}.`);
+  } 
+  // Si el movimiento es hacia atrás y se pasa del inicio (casilla 0)
+  else if (newPos < 0) {
+    newPos = 0; // Se queda en la casilla de inicio
+    addLog(`${player.name} retrocedió demasiado y se quedó en la salida.`);
+  } 
+  // Movimiento normal
+  else {
+    addLog(`${player.name} lanzó ${steps} y avanza a casilla ${newPos + 1}.`);
+  }
+
+  animateMarkerMovement(player, oldPos, newPos, () => {
+    if (newPos === lastIdx) {
+      showModal(`${player.name} ha llegado a la META y ¡GANA! 🎉`, '', endGame, 'finish');
+      return;
+    }
+
+    const newCell = document.querySelector(`.cell[data-index="${newPos}"]`);
+    handleCellEffect(player, newCell);
+  });
+}
+
+
+    function handleCellEffect(player, cellElem) {
+      const type = cellElem.dataset.type;
+      const position = player.position;
+
+      if (type === 'start' || type === 'finish') {
+        setTimeout(nextTurn, 300);
+        return;
+      }
+
+      let title = '';
+      let mensaje = '';
+      let callback = nextTurn;
+
+        // Asignar títulos según el tipo de casilla
+      switch(type) {
+        case 'reto':
+          title = '¡Reto!';
+          mensaje = `Para ${player.name}:\n${getContentBasedOnPosition(position, retosNormales, retosCalientes)}`;
+          break;
+        case 'verdad':
+          title = '¡Verdad!';
+          mensaje = `Para ${player.name}:\n${getContentBasedOnPosition(position, verdadesNormales, verdadesCalientes)}`;
+          break;
+        case 'trago':
+          title = '¡Trago!';
+          mensaje = `Para ${player.name}:\n${getRandom(tragos)}`;
+          break;
+        case 'yo-nunca':
+          title = '¡Yo Nunca!';
+          mensaje = `${getContentBasedOnPosition(position, yoNuncaNormales, yoNuncaCalientes)}\n\n${player.name}, ¿lo has hecho? Responde con honestidad.`;
+          break;
+        case 'avanza':
+          title = '¡Avanza!';
+          const avance = Math.floor(Math.random() * 5) + 3;
+          mensaje = `${player.name} avanza ${avance} casillas!`;
+          
+          callback = () => {
+            movePlayer(player, avance);
+          };
+          break;
+        case 'retrocede':
+          title = '¡Retrocede!';
+          const retroceso = Math.floor(Math.random() * 5) + 3;
+          mensaje = `${player.name} retrocede ${retroceso} casillas!`;
+          
+          callback = () => {
+            movePlayer(player, -retroceso);
+          };
+          break;
+        case 'vira':
+          title = '¡Vira!';
+          // MODIFICACIÓN: Solo virar a casillas anteriores
+          if (player.position <= 1) {
+            // Si está en la casilla 0 o 1, no puede virar hacia atrás
+            mensaje = `${player.name} está en una de las primeras casillas y no puede virar hacia atrás.`;
+            callback = nextTurn;
+          } else {
+            // Seleccionar una casilla aleatoria entre 0 y la posición actual - 1
+            const nuevaCasilla = Math.floor(Math.random() * player.position);
+            mensaje = `${player.name} vira a la casilla ${nuevaCasilla + 1}!`;
+            
+            callback = () => {
+              const oldPos = player.position;
+              animateMarkerMovement(player, oldPos, nuevaCasilla, () => {
+                const newCell = document.querySelector(`.cell[data-index="${nuevaCasilla}"]`);
+                handleCellEffect(player, newCell);
+              });
+            };
+          }
+          break;
+        case 'cambia':
+          title = '¡Cambia!';
+          let jugadorObjetivo = null;
+          let maxPos = -1;
+          
+          for (const p of players) {
+            if (p.id !== player.id && p.position > maxPos && p.position < totalSquares - 1) {
+              maxPos = p.position;
+              jugadorObjetivo = p;
+            }
+          }
+          
+          if (jugadorObjetivo) {
+            mensaje = `${player.name} cambia de posición con ${jugadorObjetivo.name}!`;
+            
+            callback = () => {
+              const tempPos = player.position;
+              player.position = jugadorObjetivo.position;
+              jugadorObjetivo.position = tempPos;
+              
+              updateAllMarkers();
+              updatePlayersInfo();
+              setTimeout(nextTurn, 1000);
+            };
+          } else {
+            mensaje = `No hay otro jugador con quien cambiar posición.`;
+          }
+          break;
+        case 'pierde-turno':
+          title = '¡Pierde Turno!';
+          mensaje = `${player.name} pierde el próximo turno!`;
+          playerToSkip = player.id;
+          skipNextTurn = true;
+          break;
+        default:
+          title = 'Acción';
+          mensaje = `${player.name} ha caído en una casilla especial.`;
+      }
+
+      // Pasar el tipo de casilla a showModal para la cara frontal
+      showModal(title, mensaje, callback, type);
+    }
+
+    function updateAllMarkers() {
+      const allMarkers = document.querySelectorAll('.marker');
+      allMarkers.forEach(marker => marker.remove());
+
+      players.forEach(p => {
+        const cellMarkers = document.querySelector(`.cell[data-index="${p.position}"] .markers`);
+        const marker = document.createElement('div');
+        marker.classList.add('marker');
+        marker.style.backgroundColor = p.color;
+        marker.dataset.playerId = p.id;
+        cellMarkers.appendChild(marker);
+        p.marker = marker;
+      });
+    }
+
+function nextTurn() {
+  // Mover al siguiente jugador en la lista. Este será el jugador cuyo turno comienza.
+  currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+  
+  const nextPlayer = players[currentPlayerIndex];
+
+  // Verificar si el jugador que le toca debe saltar su turno
+  if (skipNextTurn && nextPlayer.id === playerToSkip) {
+    addLog(`${nextPlayer.name} pierde su turno. Pasando al siguiente jugador.`);
+    
+    // Resetear las variables de salto
+    skipNextTurn = false;
+    playerToSkip = null;
+    
+    // Llama a nextTurn recursivamente para que avance al siguiente jugador real.
+    // Al volver a llamar, el jugador que pierda su turno ya no estará marcado, 
+    // y el índice se incrementará al jugador correcto.
+    nextTurn(); 
+    return;
+  }
+  
+  // Si no hay que saltar el turno, actualizamos la información y habilitamos el botón.
+  updateTurnInfo();
+  enableRollBtn();
+}
+
+
+    function disableRollBtn() {
+      const btn = document.getElementById('rollBtn');
+      btn.disabled = true;
+    }
+
+    function enableRollBtn() {
+      const btn = document.getElementById('rollBtn');
+      btn.disabled = false;
+    }
+
+    function endGame() {
+      disableRollBtn();
+      document.getElementById('turnInfo').textContent = 'Fin del juego';
+      addLog('--- PARTIDA FINALIZADA ---');
+    }
+
+    function generatePlayerInputs() {
+      const n = parseInt(document.getElementById('numPlayers').value, 10) || 2;
+      const container = document.getElementById('playerNames');
+      container.innerHTML = '';
+      for (let i = 0; i < n; i++) {
+        const lbl = document.createElement('label');
+        lbl.textContent = `Nombre del jugador ${i + 1}:`;
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.id = `playerName${i}`;
+        inp.placeholder = `Jugador ${i + 1}`;
+        inp.value = `Jugador ${i + 1}`;
+        lbl.appendChild(inp);
+        container.appendChild(lbl);
+        container.appendChild(document.createElement('br'));
+      }
+    }
+
+    document.getElementById('numPlayers').addEventListener('input', generatePlayerInputs);
+    generatePlayerInputs();
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      const n = parseInt(document.getElementById('numPlayers').value, 10) || 2;
+      players = [];
+      for (let i = 0; i < n; i++) {
+        const nameInput = document.getElementById(`playerName${i}`);
+        const name = nameInput ? nameInput.value.trim() : `Jugador ${i + 1}`;
+        const color = playerColors[i % playerColors.length];
+        players.push({id: i, name: name || `Jugador ${i + 1}`, color, position: 0});
+      }
+
+      createBoard();
+      placePlayerMarkers();
+
+      document.getElementById('setup').style.display = 'none';
+      document.getElementById('game').style.display = 'block';
+
+      currentPlayerIndex = 0;
+      updateTurnInfo();
+      enableRollBtn();
+      addLog('--- NUEVA PARTIDA INICIADA ---');
+      
+      const dice = document.getElementById('dice');
+      for (let i = 1; i <= 6; i++) {
+        dice.querySelector(`.face-${i}`).style.display = 'none';
+      }
+      dice.querySelector('.face-1').style.display = 'flex';
+      dice.style.transform = 'rotateX(0deg) rotateY(0deg)';
+    });
+
+    document.getElementById('rollBtn').addEventListener('click', rollDice);
+    
+    // Nueva función para prevenir el pull-to-refresh
+    function preventPullToRefresh(element) {
+      let prevent = false;
+      
+      element.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        
+        const scrollY = window.pageYOffset || document.body.scrollTop || document.documentElement.scrollTop;
+        prevent = scrollY === 0;
+      });
+      
+      element.addEventListener('touchmove', (e) => {
+        if (prevent) {
+          prevent = false;
+          e.preventDefault();
+        }
+      });
+    }
+    
+    // Aplicar la prevención al cargar la página
+    window.addEventListener('DOMContentLoaded', () => {
+      preventPullToRefresh(document.body);
+      preventPullToRefresh(document.getElementById('boardContainer'));
+    });
+    
+  </script>
+</body>
+</html>

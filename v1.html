@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Juego de Tablero Moderno – 60 casillas</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --cell-size: 90px;
+      --reto-color: #3498db;
+      --verdad-color: #f1c40f;
+      --trago-color: #e67e22;
+      --yo-nunca-color: #9b59b6;
+      --start-color: #95a5a6;
+      --finish-color: #e74c3c;
+      --primary-gradient: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      --secondary-gradient: linear-gradient(135deg, #fd79a8 0%, #fdcb6e 100%);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--primary-gradient);
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    h1, h2 {
+      text-align: center;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      margin-bottom: 15px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      background: var(--secondary-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 25px;
+    }
+
+    /* ---------- Pantalla de configuración ---------- */
+    #setup {
+      max-width: 600px;
+      width: 100%;
+      margin: 20px auto;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      animation: fadeIn 0.8s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #setup label {
+      display: block;
+      margin: 15px 0 8px;
+      font-weight: bold;
+      color: #fff;
+      font-size: 1.1rem;
+    }
+
+    #setup input[type="number"],
+    #setup input[type="text"] {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+
+    #setup input:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
+    }
+
+    #setup button {
+      display: block;
+      width: 100%;
+      margin-top: 25px;
+      padding: 16px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      background: #00c853;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    #setup button:hover {
+      background: #009624;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    #setup button i {
+      margin-left: 8px;
+    }
+
+    .legend {
+      margin-top: 25px;
+      font-size: 0.95rem;
+      color: #eee;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .legend p {
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin: 10px 0;
+    }
+
+    .legend-color {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      margin-right: 12px;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ---------- Área de juego ---------- */
+    #game {
+      max-width: 1100px;
+      width: 100%;
+      margin: 20px auto;
+      padding: 20px;
+      display: none;
+    }
+
+    #turnInfo {
+      font-size: 1.6rem;
+      margin-bottom: 20px;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 15px;
+      border-radius: 12px;
+      font-weight: bold;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ----- Botón de lanzar dado ----- */
+    #rollBtn {
+      display: block;
+      margin: 0 auto 25px;
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: var(--secondary-gradient);
+      border: none;
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    #rollBtn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0));
+      z-index: -1;
+    }
+
+    #rollBtn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 15px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    #rollBtn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #rollBtn.rolling {
+      animation: roll 1s ease-out;
+    }
+
+    @keyframes roll {
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(1080deg); }
+    }
+
+    /* ----- Información de los jugadores ----- */
+    #playersInfo {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .player-tag {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 25px;
+      padding: 10px 20px;
+      font-size: 1.1rem;
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s;
+    }
+
+    .player-tag.active {
+      background: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+      transform: scale(1.05);
+    }
+
+    .player-tag .dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      margin-right: 10px;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    }
+
+    /* ----- Tablero ----- */
+    #boardContainer {
+      width: 100%;
+      max-height: 650px;
+      overflow: auto;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      background: rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(8px);
+      border-radius: 16px;
+      padding: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(10, var(--cell-size));
+      grid-auto-rows: var(--cell-size);
+      gap: 8px;
+      padding: 8px;
+      margin: 0 auto;
+      width: fit-content;
+    }
+
+    .cell {
+      position: relative;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #fff;
+      cursor: default;
+      box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.2), 0 5px 10px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s, box-shadow 0.3s;
+      overflow: hidden;
+    }
+
+    .cell:hover {
+      transform: translateY(-5px);
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2), 0 8px 15px rgba(0, 0, 0, 0.25);
+    }
+
+    .cell::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 35%;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .cell-number {
+      position: absolute;
+      top: 5px;
+      left: 8px;
+      font-size: 0.85rem;
+      color: #fff;
+      text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+      font-weight: bold;
+    }
+
+    .cell-type {
+      font-size: 0.95rem;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+      z-index: 2;
+      font-weight: 600;
+    }
+
+    .cell-icon {
+      font-size: 1.6rem;
+      margin-bottom: 5px;
+      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.6);
+      z-index: 2;
+    }
+
+    .cell.reto {
+      background: linear-gradient(to bottom, var(--reto-color), #2980b9);
+    }
+    .cell.verdad {
+      background: linear-gradient(to bottom, var(--verdad-color), #d35400);
+    }
+    .cell.trago {
+      background: linear-gradient(to bottom, var(--trago-color), #c0392b);
+    }
+    .cell.yo-nunca {
+      background: linear-gradient(to bottom, var(--yo-nunca-color), #8e44ad);
+    }
+    .cell.start {
+      background: linear-gradient(to bottom, var(--start-color), #7f8c8d);
+    }
+    .cell.finish {
+      background: linear-gradient(to bottom, var(--finish-color), #c0392b);
+    }
+
+    .markers {
+      position: absolute;
+      bottom: 5px;
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      gap: 4px;
+      padding: 0 5px;
+    }
+
+    .marker {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+    }
+
+    /* ----- Registro de turnos ----- */
+    #log {
+      height: 160px;
+      overflow: auto;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 25px;
+      font-size: 1rem;
+      line-height: 1.5;
+      backdrop-filter: blur(5px);
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    #log p {
+      margin: 10px 0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      animation: logEntry 0.5s ease-out;
+    }
+
+    @keyframes logEntry {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ----- Modal ----- */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(5px);
+      animation: modalFadeIn 0.3s ease-out;
+    }
+    
+    @keyframes modalFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .modal.hidden { display: none; }
+
+    .modal-content {
+      background: var(--primary-gradient);
+      padding: 35px;
+      border-radius: 20px;
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      animation: modalScale 0.3s ease-out;
+    }
+    
+    @keyframes modalScale {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    
+    .modal-content p {
+      margin: 0 0 30px;
+      font-size: 1.3rem;
+      line-height: 1.6;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    
+    #modalClose {
+      padding: 14px 30px;
+      background: #00c853;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: bold;
+      transition: all 0.3s;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    #modalClose:hover {
+      background: #009624;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Responsive */
+    @media (max-width: 1100px) {
+      :root {
+        --cell-size: 80px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      :root {
+        --cell-size: 70px;
+      }
+      
+      h1 {
+        font-size: 2.2rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      :root {
+        --cell-size: 60px;
+      }
+      
+      #board {
+        grid-template-columns: repeat(10, var(--cell-size));
+      }
+      
+      .cell-type {
+        font-size: 0.8rem;
+      }
+      
+      .cell-icon {
+        font-size: 1.3rem;
+      }
+      
+      #rollBtn {
+        width: 110px;
+        height: 110px;
+        font-size: 1.1rem;
+      }
+      
+      .modal-content {
+        padding: 25px;
+      }
+      
+      .modal-content p {
+        font-size: 1.1rem;
+      }
+    }
+    
+    @media (max-width: 600px) {
+      body {
+        padding: 15px;
+      }
+      
+      #setup {
+        padding: 20px;
+      }
+      
+      h1 {
+        font-size: 1.8rem;
+      }
+      
+      #rollBtn {
+        width: 100px;
+        height: 100px;
+        font-size: 1rem;
+      }
+      
+      .player-tag {
+        font-size: 0.9rem;
+        padding: 8px 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ---------- Pantalla de Configuración ---------- -->
+  <div id="setup">
+    <h1>Juego de Tablero Moderno</h1>
+    <label for="numPlayers">Número de jugadores (2‑4):</label>
+    <input type="number" id="numPlayers" min="2" max="4" value="2">
+
+    <div id="playerNames"></div>
+
+    <button id="startBtn">Comenzar Juego <i class="fas fa-play"></i></button>
+    
+    <div class="legend">
+      <p><strong>Leyenda de casillas:</strong></p>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--reto-color);"></div>
+        <span>Reto - Debes completar un desafío</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--verdad-color);"></div>
+        <span>Verdad - Debes responder una pregunta sinceramente</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--trago-color);"></div>
+        <span>Trago - Debes tomar un trago</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--yo-nunca-color);"></div>
+        <span>Yo Nunca - Responde honestamente si alguna vez hiciste algo</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- Área de Juego ---------- -->
+  <div id="game">
+    <h2 id="turnInfo">Turno: </h2>
+    <button id="rollBtn">Lanzar Dado <i class="fas fa-dice"></i></button>
+
+    <div id="playersInfo"></div>
+
+    <div id="boardContainer">
+      <div id="board"></div>
+    </div>
+
+    <div id="log"></div>
+  </div>
+
+  <!-- ---------- Modal ---------- -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-content">
+      <p id="modalText"></p>
+      <button id="modalClose">OK</button>
+    </div>
+  </div>
+
+  <script>
+    // --------------------------------------------------------------
+    //  Datos de los retos / verdades / tragos / yo nunca (ejemplos)
+    // --------------------------------------------------------------
+    const retos = [
+      "Imita a un animal durante 30 segundos.",
+      "Haz 10 flexiones.",
+      "Canta el estribillo de tu canción favorita.",
+      "Mantén una mueca graciosa durante 10 segundos.",
+      "Camina como un robot hasta la siguiente casilla."
+    ];
+
+    const verdades = [
+      "¿Cuál es tu mayor miedo?",
+      "¿Alguna vez has mentido para evitar problemas?",
+      "¿Cuál ha sido tu mayor vergüenza?",
+      "¿Tienes alguna culpa secreta?",
+      "¿A quién admiras en secreto?"
+    ];
+
+    const tragos = [
+      "El más alto toma un shot.",
+      "La persona con los pechos más grandes toma un shot.",
+      "El que tenga más tatuajes toma un shot.",
+      "El más bajito/a toma un shot.",
+      "La persona con mejor trasero (según el grupo) toma un shot.",
+      "El que tenga el pelo más largo toma un shot.",
+      "El/la más musculoso/a toma un shot.",
+      "Quien lleve menos ropa toma un shot.",
+      "Quien lleve ropa interior roja hoy toma un shot.",
+      "El jugador mas joven toma un shot.",
+      "Todos brindan y toman un shot.",
+      "Todas las chicas toman un shot.",
+      "Todos los chicos toman un shot.",
+      "Quien lleve ropa interior de color negro hoy toma un shot."
+    ];
+
+    const yoNunca = [
+      "Yo nunca he tenido una aventura de una noche.",
+      "Yo nunca me he enamorado de un amigo/a.",
+      "Yo nunca he fingido un orgasmo.",
+      "Yo nunca he enviado un mensaje de texto borracho/a.",
+      "Yo nunca he tenido sexo en un lugar público.",
+      "Yo nunca he fantaseado con alguien del trabajo.",
+      "Yo nunca he tenido sexo en la primera cita.",
+      "Yo nunca he visto pornografía.",
+      "Yo nunca he tenido un sueño erótico con un famoso.",
+      "Yo nunca he tenido relaciones sin protección.",
+      "Yo nunca he sido infiel.",
+      "Yo nunca he mentido sobre mi edad.",
+      "Yo nunca he salido con alguien solo por dinero.",
+      "Yo nunca he rechazado a alguien por su apariencia.",
+      "Yo nunca he tenido sexo en la playa."
+    ];
+
+    // --------------------------------------------------------------
+    //  Configuración del juego
+    // --------------------------------------------------------------
+    const playerColors = ['#e74c3c', '#8e44ad', '#27ae60', '#2980b9']; // rojo, morado, verde, azul
+
+    let players = [];                 // array de objetos jugador
+    let currentPlayerIndex = 0;       // índice del jugador que tiene turno
+    const totalSquares = 60;          // 0 … 59
+
+    // --------------------------------------------------------------
+    //  Utilidades
+    // --------------------------------------------------------------
+    function getRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function addLog(msg) {
+      const log = document.getElementById('log');
+      const p = document.createElement('p');
+      p.textContent = msg;
+      log.appendChild(p);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // --------------------------------------------------------------
+    //  Creación del tablero
+    // --------------------------------------------------------------
+    function createBoard() {
+      const board = document.getElementById('board');
+      board.innerHTML = '';
+
+      for (let i = 0; i < totalSquares; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.index = i;
+
+        // Determinamos el tipo de casilla
+        let type = '';
+        let typeText = '';
+        let icon = '';
+        
+        if (i === 0) {
+          type = 'start';
+          typeText = 'Inicio';
+          icon = 'flag';
+          cell.classList.add('start');
+        } else if (i === totalSquares - 1) {
+          type = 'finish';
+          typeText = 'Meta';
+          icon = 'trophy';
+          cell.classList.add('finish');
+        } else {
+          switch (i % 4) {
+            case 0: 
+              type = 'reto';
+              typeText = 'Reto';
+              icon = 'tasks';
+              cell.classList.add('reto');
+              break;
+            case 1: 
+              type = 'verdad';
+              typeText = 'Verdad';
+              icon = 'question-circle';
+              cell.classList.add('verdad');
+              break;
+            case 2: 
+              type = 'trago';
+              typeText = 'Trago';
+              icon = 'glass-cheers';
+              cell.classList.add('trago');
+              break;
+            case 3: 
+              type = 'yo-nunca';
+              typeText = 'Yo Nunca';
+              icon = 'hand-point-right';
+              cell.classList.add('yo-nunca');
+              break;
+          }
+        }
+        cell.dataset.type = type;
+
+        // número de la casilla (1-60)
+        const num = document.createElement('span');
+        num.classList.add('cell-number');
+        num.textContent = i + 1;
+        cell.appendChild(num);
+
+        // ícono de la casilla
+        const iconElem = document.createElement('i');
+        iconElem.classList.add('cell-icon', 'fas', `fa-${icon}`);
+        cell.appendChild(iconElem);
+
+        // texto del tipo de casilla
+        const typeElem = document.createElement('div');
+        typeElem.classList.add('cell-type');
+        typeElem.textContent = typeText;
+        cell.appendChild(typeElem);
+
+        // contenedor de marcadores de jugadores
+        const markers = document.createElement('div');
+        markers.classList.add('markers');
+        cell.appendChild(markers);
+
+        board.appendChild(cell);
+      }
+    }
+
+    // --------------------------------------------------------------
+    //  Colocamos los marcadores de los jugadores en la casilla de salida
+    // --------------------------------------------------------------
+    function placePlayerMarkers() {
+      players.forEach(p => {
+        const startMarkers = document.querySelector('.cell[data-index="0"] .markers');
+        const marker = document.createElement('div');
+        marker.classList.add('marker');
+        marker.style.backgroundColor = p.color;
+        marker.dataset.playerId = p.id;
+        startMarkers.appendChild(marker);
+        p.marker = marker; // guardamos referencia para moverlo después
+        p.position = 0;   // todos empiezan en 0
+      });
+    }
+
+    // --------------------------------------------------------------
+    //  Actualizamos la barra de información de los jugadores
+    // --------------------------------------------------------------
+    function updatePlayersInfo() {
+      const container = document.getElementById('playersInfo');
+      container.innerHTML = '';
+      players.forEach((p, index) => {
+        const tag = document.createElement('div');
+        tag.classList.add('player-tag');
+        if (index === currentPlayerIndex) {
+          tag.classList.add('active');
+        }
+        const dot = document.createElement('div');
+        dot.classList.add('dot');
+        dot.style.backgroundColor = p.color;
+        tag.appendChild(dot);
+        const txt = document.createElement('span');
+        txt.textContent = `${p.name} (casilla ${p.position + 1})`;
+        tag.appendChild(txt);
+        container.appendChild(tag);
+      });
+    }
+
+    // --------------------------------------------------------------
+    //  Cambiamos el turno y la información visual
+    // --------------------------------------------------------------
+    function updateTurnInfo() {
+      const turnInfo = document.getElementById('turnInfo');
+      const cur = players[currentPlayerIndex];
+      turnInfo.textContent = `Turno de ${cur.name}`;
+      updatePlayersInfo();
+    }
+
+    // --------------------------------------------------------------
+    //  Función que muestra un modal con mensaje
+    // --------------------------------------------------------------
+    function showModal(msg, callback) {
+      const modal = document.getElementById('modal');
+      const txt = document.getElementById('modalText');
+      txt.textContent = msg;
+      modal.classList.remove('hidden');
+
+      const closeBtn = document.getElementById('modalClose');
+      // Eliminamos listeners anteriores
+      const newBtn = closeBtn.cloneNode(true);
+      closeBtn.parentNode.replaceChild(newBtn, closeBtn);
+
+      newBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        if (typeof callback === 'function') callback();
+      });
+    }
+
+    // --------------------------------------------------------------
+    //  Lógica de movimiento del jugador
+    // --------------------------------------------------------------
+    function movePlayer(player, steps) {
+      const oldPos = player.position;
+      let newPos = oldPos + steps;
+      const lastIdx = totalSquares - 1;
+
+      // Regla: se necesita llegar exactamente a la meta; si se pasa se rebota.
+      if (newPos > lastIdx) {
+        const excess = newPos - lastIdx;
+        newPos = lastIdx - excess;
+        if (newPos < 0) newPos = 0;
+        addLog(`${player.name} lanzó ${steps} y se pasó de la meta → rebota a casilla ${newPos + 1}.`);
+      } else {
+        addLog(`${player.name} lanzó ${steps} y avanza a casilla ${newPos + 1}.`);
+      }
+
+      // Actualizamos marcador visual
+      player.marker.parentElement.removeChild(player.marker);
+      const newCellMarkers = document.querySelector(`.cell[data-index="${newPos}"] .markers`);
+      newCellMarkers.appendChild(player.marker);
+      player.position = newPos;
+
+      // Desplazamos la vista para que la casilla quede visible
+      const newCell = document.querySelector(`.cell[data-index="${newPos}"]`);
+      if (newCell) {
+        newCell.scrollIntoView({behavior: 'smooth', block: 'center', inline: 'center'});
+      }
+
+      // Si llegó a la meta, termina el juego
+      if (newPos === lastIdx) {
+        showModal(`${player.name} ha llegado a la META y ¡GANA! 🎉`, endGame);
+        return;
+      }
+
+      // Caso de casilla normal → ejecutar acción correspondiente
+      handleCellEffect(player, newCell);
+    }
+
+    // --------------------------------------------------------------
+    //  Acción de la casilla donde quedó el jugador
+    // --------------------------------------------------------------
+    function handleCellEffect(player, cellElem) {
+      let type = cellElem.dataset.type; // reto, verdad, trago, yo-nunca, start, finish
+
+      // Las casillas start/finish no tienen acción
+      if (type === 'start' || type === 'finish') {
+        // Pasamos al siguiente turno directamente
+        setTimeout(nextTurn, 300);
+        return;
+      }
+
+      let mensaje = '';
+      if (type === 'reto') {
+        mensaje = `Reto para ${player.name}:\n${getRandom(retos)}`;
+      } else if (type === 'verdad') {
+        mensaje = `Verdad para ${player.name}:\n${getRandom(verdades)}`;
+      } else if (type === 'trago') {
+        mensaje = `Trago para ${player.name}:\n${getRandom(tragos)}`;
+      } else if (type === 'yo-nunca') {
+        mensaje = `Yo Nunca:\n${getRandom(yoNunca)}\n\n${player.name}, ¿lo has hecho? Responde con honestidad.`;
+      }
+
+      // Mostramos la tarea y, al cerrar, pasamos al siguiente turno
+      showModal(mensaje, nextTurn);
+    }
+
+    // --------------------------------------------------------------
+    //  Paso al siguiente jugador
+    // --------------------------------------------------------------
+    function nextTurn() {
+      currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+      updateTurnInfo();
+      enableRollBtn();
+    }
+
+    // --------------------------------------------------------------
+    //  Lanzamiento del dado (con animación)
+    // --------------------------------------------------------------
+    function disableRollBtn() {
+      const btn = document.getElementById('rollBtn');
+      btn.disabled = true;
+    }
+
+    function enableRollBtn() {
+      const btn = document.getElementById('rollBtn');
+      btn.disabled = false;
+    }
+
+    function rollDice() {
+      disableRollBtn();
+
+      const btn = document.getElementById('rollBtn');
+      btn.classList.add('rolling');
+
+      // Simulación de animación (1 sec)
+      setTimeout(() => {
+        const result = Math.floor(Math.random() * 6) + 1;
+        btn.classList.remove('rolling');
+        btn.innerHTML = `Resultado: ${result} <i class="fas fa-dice-${result}"></i>`;
+        // Volvemos al texto original tras un momento
+        setTimeout(() => { btn.innerHTML = 'Lanzar Dado <i class="fas fa-dice"></i>'; }, 1500);
+
+        const player = players[currentPlayerIndex];
+        movePlayer(player, result);
+        // El botón se habilita después de que la casilla haya ejecutado su acción
+      }, 1000);
+    }
+
+    // --------------------------------------------------------------
+    //  Final del juego
+    // --------------------------------------------------------------
+    function endGame() {
+      disableRollBtn();
+      document.getElementById('turnInfo').textContent = 'Fin del juego';
+      addLog('--- PARTIDA FINALIZADA ---');
+    }
+
+    // --------------------------------------------------------------
+    //  Configuración inicial (nombres de jugadores)
+    // --------------------------------------------------------------
+    function generatePlayerInputs() {
+      const n = parseInt(document.getElementById('numPlayers').value, 10) || 2;
+      const container = document.getElementById('playerNames');
+      container.innerHTML = '';
+      for (let i = 0; i < n; i++) {
+        const lbl = document.createElement('label');
+        lbl.textContent = `Nombre del jugador ${i + 1}:`;
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.id = `playerName${i}`;
+        inp.placeholder = `Jugador ${i + 1}`;
+        inp.value = `Jugador ${i + 1}`;
+        lbl.appendChild(inp);
+        container.appendChild(lbl);
+        container.appendChild(document.createElement('br'));
+      }
+    }
+
+    document.getElementById('numPlayers').addEventListener('input', generatePlayerInputs);
+    generatePlayerInputs(); // al cargar la página
+
+    // --------------------------------------------------------------
+    //  Botón "Comenzar Juego"
+    // --------------------------------------------------------------
+    document.getElementById('startBtn').addEventListener('click', () => {
+      const n = parseInt(document.getElementById('numPlayers').value, 10) || 2;
+      players = [];
+      for (let i = 0; i < n; i++) {
+        const nameInput = document.getElementById(`playerName${i}`);
+        const name = nameInput ? nameInput.value.trim() : `Jugador ${i + 1}`;
+        const color = playerColors[i % playerColors.length];
+        players.push({id: i, name: name || `Jugador ${i + 1}`, color, position: 0});
+      }
+
+      // Preparar el tablero
+      createBoard();
+      placePlayerMarkers();
+
+      // Mostrar la zona de juego
+      document.getElementById('setup').style.display = 'none';
+      document.getElementById('game').style.display = 'block';
+
+      // Estado inicial
+      currentPlayerIndex = 0;
+      updateTurnInfo();
+      enableRollBtn();
+      addLog('--- NUEVA PARTIDA INICIADA ---');
+    });
+
+    // --------------------------------------------------------------
+    //  Botón "Lanzar Dado"
+    // --------------------------------------------------------------
+    document.getElementById('rollBtn').addEventListener('click', rollDice);
+  </script>
+</body>
+</html>
